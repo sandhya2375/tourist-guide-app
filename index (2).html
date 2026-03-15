@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TravelGuide India</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+  // ── FIREBASE CONFIG ──────────────────────────────────────────
+  // NOTE: Replace with your own Firebase config from console.firebase.google.com
+  const firebaseConfig = {
+    apiKey: "AIzaSyBY8s_rb5VyB4RAHQqdn7_PVNs1hzNHU4I",
+    authDomain: "travelguide-india.firebaseapp.com",
+    projectId: "travelguide-india",
+    storageBucket: "travelguide-india.firebasestorage.app",
+    messagingSenderId: "308585145938",
+    appId: "1:308585145938:web:95b7c96e27a557ad85618b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ── AUTH STATE LISTENER ──────────────────────────────────────
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      window._fbUser = user;
+      window._isLoggedIn = true;
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        window._userData = snap.data();
+        window._points = snap.data().points || 0;
+      } else {
+        window._userData = { name: user.displayName || "Traveller", points: 0 };
+        window._points = 0;
+      }
+      updateUI();
+    } else {
+      window._fbUser = null;
+      window._isLoggedIn = false;
+      window._points = 0;
+      goRaw('login');
+    }
+  });
+
+  // ── SIGNUP ───────────────────────────────────────────────────
+  window.fbSignup = async function() {
+    const name  = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const pass  = document.getElementById('signup-pass').value.trim();
+    if (!name || !email || !pass) { showError('signup','⚠️ Saari fields bharo!'); return; }
+    if (pass.length < 6) { showError('signup','⚠️ Password kam se kam 6 characters!'); return; }
+    showLoading('signup-btn', 'Creating...');
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+      await setDoc(doc(db, "users", cred.user.uid), {
+        name, email, points: 100, badges: ['first_trip'], joinedAt: new Date().toISOString()
+      });
+      window._points = 100;
+      clearError('signup');
+      showToast('🎉 Welcome! 100 bonus points credited!');
+      goRaw('home');
+      updateUI();
+    } catch(e) {
+      showError('signup', '❌ ' + (e.code === 'auth/email-already-in-use' ? 'Email already registered!' : e.message));
+    }
+    hideLoading('signup-btn', 'Create Account →');
+  };
+
+  // ── LOGIN ────────────────────────────────────────────────────
+  window.fbLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value.trim();
+    if (!email || !pass) { showError('login','⚠️ Email aur password dono bharo!'); return; }
+    showLoading('login-btn', 'Signing in...');
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      clearError('login');
+    } catch(e) {
+      showError('login', e.code === 'auth/invalid-credential' ? '❌ Email ya password galat hai!' : '❌ Login failed. Try again.');
+    }
+    hideLoading('login-btn', 'Sign In →');
+  };
+
+  // ── LOGOUT ───────────────────────────────────────────────────
+  window.fbLogout = async function() {
+    await signOut(auth);
+    goRaw('login');
+  };
+
+  // ── ADD POINTS ───────────────────────────────────────────────
+  window.fbAddPoints = async function(pts, reason) {
+    if (!window._fbUser) return;
+    window._points += pts;
+    updateUI();
+    showToast('+' + pts + ' points — ' + reason + '! ⭐');
+    try {
+      await updateDoc(doc(db, "users", window._fbUser.uid), { points: increment(pts) });
+    } catch(e) { console.log('Points update failed', e); }
+  };
+
+  function updateUI() {
+    const name = window._fbUser?.displayName || window._userData?.name || 'Traveller';
+    const el = document.getElementById('hero-name');
+    if (el) el.textContent = name.split(' ')[0];
+    document.querySelectorAll('.pts-display').forEach(e => e.textContent = (window._points || 0).toLocaleString());
+    const fill = Math.min(((window._points || 0) / 2000) * 100, 100);
+    document.querySelectorAll('.prog-fill').forEach(e => e.style.width = fill + '%');
+    const needed = Math.max(2000 - (window._points || 0), 0);
+    document.querySelectorAll('.prog-lbl').forEach(e => e.textContent = needed > 0 ? needed + ' pts more to reach Gold 🥇' : '🥇 Gold Status Achieved!');
+  }
+  window._updateUI = updateUI;
+</script>
+
+<style>
+  :root {
+    --green: #00e676; --green-dim: #00c853; --dark: #080c10;
+    --card: #0e1318; --card2: #141b22; --border: rgba(0,230,118,0.12);
+    --text: #e8f0e8; --muted: #607060; --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  .screen { display: none; min-height: 100vh; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* LOGIN / SIGNUP */
+  .auth-wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem 1.5rem; }
+  .login-logo { width:72px; height:72px; background:var(--green); border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:1.5rem; box-shadow:0 0 40px rgba(0,230,118,0.3); }
+  .login-brand { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:#fff; margin-bottom:6px; }
+  .login-tagline { font-size:13px; color:var(--muted); margin-bottom:2.5rem; letter-spacing:1px; text-transform:uppercase; }
+  .login-box { width:100%; max-width:380px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:2rem; }
+  .inp-group { margin-bottom:1.2rem; }
+  .inp-label { font-size:12px; color:var(--muted); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
+  .inp { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:13px 16px; color:var(--text); font-size:14px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.2s; }
+  .inp:focus { border-color:var(--green); }
+  .btn-main { width:100%; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:15px; padding:14px; border-radius:12px; border:none; cursor:pointer; transition:all 0.2s; margin-top:0.5rem; }
+  .btn-main:hover { background:var(--green-dim); transform:translateY(-1px); }
+  .btn-main:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  .login-divider { text-align:center; color:var(--muted); font-size:12px; margin:1.2rem 0; }
+  .login-footer { text-align:center; margin-top:1.5rem; font-size:13px; color:var(--muted); }
+  .login-footer span { color:var(--green); cursor:pointer; font-weight:500; }
+  .err-box { display:none; color:#ff4d6d; font-size:13px; margin-bottom:10px; text-align:center; padding:8px 12px; background:rgba(255,77,109,0.1); border-radius:8px; border:1px solid rgba(255,77,109,0.2); }
+
+  /* HOME */
+  #s-home { padding-bottom:80px; }
+  .home-hero { background:linear-gradient(160deg,#0a2e1a 0%,var(--dark) 70%); padding:3.5rem 1.5rem 2rem; position:relative; overflow:hidden; }
+  .home-hero::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:radial-gradient(circle,rgba(0,230,118,0.06) 0%,transparent 70%); border-radius:50%; }
+  .hero-toprow { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .hero-greeting { font-size:13px; color:var(--green); text-transform:uppercase; letter-spacing:2px; }
+  .btn-logout { background:rgba(255,77,109,0.15); border:1px solid rgba(255,77,109,0.3); color:#ff4d6d; font-size:11px; padding:5px 12px; border-radius:20px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .hero-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:#fff; line-height:1.2; margin-bottom:1rem; }
+  .hero-title span { color:var(--green); }
+  .weather-strip { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+  .weather-chip { background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2); border-radius:10px; padding:6px 12px; font-size:12px; color:var(--green); }
+  .search-wrap { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .search-icon { font-size:16px; }
+  .search-placeholder { font-size:14px; color:var(--muted); }
+
+  .section-hd { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#fff; padding:1.5rem 1.5rem 0.75rem; }
+  .cats-row { display:flex; gap:10px; padding:0 1.5rem; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .cats-row::-webkit-scrollbar { display:none; }
+  .cat-btn { display:flex; flex-direction:column; align-items:center; gap:7px; min-width:68px; cursor:pointer; }
+  .cat-circle { width:58px; height:58px; border-radius:20px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; transition:all 0.2s; }
+  .cat-btn:hover .cat-circle, .cat-btn.sel .cat-circle { background:var(--green); border-color:var(--green); transform:scale(1.05); }
+  .cat-name { font-size:10px; color:var(--muted); text-align:center; white-space:nowrap; }
+  .feat-row { display:flex; gap:12px; padding:0 1.5rem; overflow-x:auto; scrollbar-width:none; }
+  .feat-row::-webkit-scrollbar { display:none; }
+  .feat-card { min-width:210px; height:150px; border-radius:var(--radius); overflow:hidden; position:relative; cursor:pointer; flex-shrink:0; transition:transform 0.2s; }
+  .feat-card:hover { transform:scale(1.02); }
+  .feat-bg { width:100%; height:100%; display:flex; align-items:flex-end; padding:14px; position:relative; }
+  .feat-bg.c1{background:linear-gradient(135deg,#1a6b4a,#0d3b28);}
+  .feat-bg.c2{background:linear-gradient(135deg,#6b3a1a,#3b1a0d);}
+  .feat-bg.c3{background:linear-gradient(135deg,#1a3a6b,#0d1f3b);}
+  .feat-bg.c4{background:linear-gradient(135deg,#4a1a6b,#281040);}
+  .feat-emo { position:absolute; top:12px; right:12px; font-size:30px; }
+  .feat-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#fff; }
+  .feat-sub { font-size:11px; color:rgba(255,255,255,0.55); }
+  .pts-strip { margin:1.25rem 1.5rem; background:linear-gradient(120deg,#0a2e1a,#0d1f12); border:1px solid rgba(0,230,118,0.2); border-radius:var(--radius); padding:16px; display:flex; align-items:center; gap:14px; cursor:pointer; }
+  .pts-icon { font-size:28px; }
+  .pts-num-big { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--green); }
+  .pts-lbl { font-size:12px; color:var(--muted); }
+  .pts-arrow { margin-left:auto; color:var(--green); font-size:18px; }
+
+  /* EXPLORE */
+  #s-explore { padding-bottom:80px; }
+  .explore-hd { padding:3.5rem 1.5rem 1.5rem; background:linear-gradient(160deg,#0a2e1a 0%,var(--dark) 70%); }
+  .back-btn { color:var(--green); font-size:13px; cursor:pointer; margin-bottom:1rem; display:flex; align-items:center; gap:6px; font-weight:500; }
+  .expl-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+  .expl-sub { font-size:13px; color:var(--muted); margin-top:4px; }
+  .states-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:1.25rem 1.5rem; }
+  .state-card { border-radius:var(--radius); height:120px; position:relative; overflow:hidden; cursor:pointer; transition:transform 0.2s; }
+  .state-card:hover { transform:scale(1.02); }
+  .state-inner { width:100%; height:100%; display:flex; align-items:flex-end; padding:12px; }
+  .sc1{background:linear-gradient(135deg,#1a6b4a,#0d3b28);}
+  .sc2{background:linear-gradient(135deg,#6b1a4a,#3b0d28);}
+  .sc3{background:linear-gradient(135deg,#1a4a6b,#0d283b);}
+  .sc4{background:linear-gradient(135deg,#6b4a1a,#3b280d);}
+  .sc5{background:linear-gradient(135deg,#4a6b1a,#283b0d);}
+  .sc6{background:linear-gradient(135deg,#6b1a1a,#3b0d0d);}
+  .state-name { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+  .state-ct { font-size:10px; color:rgba(255,255,255,0.55); }
+  .state-emo { position:absolute; top:10px; right:10px; font-size:24px; }
+
+  /* DETAIL */
+  #s-detail { padding-bottom:80px; }
+  .detail-hero { height:240px; background:linear-gradient(135deg,#1a6b4a,#0d3b28); display:flex; align-items:center; justify-content:center; font-size:70px; position:relative; }
+  .detail-hero-grad { position:absolute; bottom:0; left:0; right:0; height:80px; background:linear-gradient(transparent,var(--dark)); }
+  .detail-back { position:absolute; top:3.5rem; left:1.5rem; color:var(--green); cursor:pointer; font-size:13px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:20px; display:flex; align-items:center; gap:6px; }
+  .detail-body { padding:0.5rem 1.5rem 1rem; }
+  .detail-name { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:#fff; }
+  .detail-place { font-size:13px; color:var(--green); margin-top:4px; display:flex; align-items:center; gap:4px; }
+  .badges-row { display:flex; gap:8px; margin:1rem 0; flex-wrap:wrap; }
+  .badge { padding:5px 13px; border-radius:20px; font-size:11px; font-weight:600; }
+  .bg{background:rgba(0,230,118,0.12);color:var(--green);}
+  .bb{background:rgba(100,180,255,0.12);color:#6ab4ff;}
+  .ba{background:rgba(255,180,50,0.12);color:#ffb84a;}
+
+  /* TRANSPORTATION SECTION */
+  .transport-sec { margin:1rem 0; }
+  .transport-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#fff; margin-bottom:12px; }
+  .transport-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .transport-btn { border-radius:14px; padding:14px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; border:none; transition:all 0.2s; text-decoration:none; }
+  .transport-btn:hover { transform:translateY(-2px); }
+  .tb-uber { background:#000; border:1.5px solid #333; color:#fff; }
+  .tb-ola { background:#1a1200; border:1.5px solid #3a2a00; color:#fff; }
+  .tb-maps { background:#0a1a2e; border:1.5px solid #1a3a4a; color:#fff; grid-column:1/-1; }
+  .tb-icon { font-size:22px; }
+  .tb-text { display:flex; flex-direction:column; }
+  .tb-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; }
+  .tb-sub { font-size:10px; opacity:0.6; margin-top:2px; }
+  .tb-badge { margin-left:auto; font-size:10px; padding:3px 8px; border-radius:10px; font-weight:600; }
+  .tb-uber .tb-badge { background:rgba(255,255,255,0.1); color:#fff; }
+  .tb-ola .tb-badge { background:rgba(255,200,0,0.15); color:#ffc800; }
+  .tb-maps .tb-badge { background:rgba(66,133,244,0.15); color:#4285f4; }
+
+  .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:1rem 0; }
+  .info-tile { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; }
+  .info-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px; }
+  .info-val { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#fff; }
+  .info-hint { font-size:11px; color:var(--green); margin-top:2px; }
+  .nearby-sec { margin-top:1.25rem; }
+  .nearby-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#fff; margin-bottom:10px; }
+  .nearby-item { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:8px; cursor:pointer; transition:border-color 0.2s; }
+  .nearby-item:hover { border-color:var(--green); }
+  .ni-icon { font-size:22px; }
+  .ni-name { font-size:13px; font-weight:500; color:var(--text); }
+  .ni-dist { font-size:11px; color:var(--muted); }
+  .ni-rating { margin-left:auto; font-size:12px; color:#ffb84a; font-weight:600; }
+  .btn-heart { width:50px; height:50px; background:var(--card); border:1px solid var(--border); border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; transition:all 0.2s; margin-top:10px; margin-left:auto; }
+  .btn-heart:hover { border-color:#ff4d6d; background:rgba(255,77,109,0.1); }
+
+  /* REWARDS */
+  #s-rewards { padding-bottom:80px; }
+  .rew-hd { padding:3.5rem 1.5rem 1.5rem; background:linear-gradient(160deg,#0a2e1a 0%,var(--dark) 70%); }
+  .rew-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+  .rew-card { margin:0 1.5rem 1.5rem; background:linear-gradient(120deg,#0a2e1a,#0d1a0d); border:1px solid rgba(0,230,118,0.25); border-radius:var(--radius); padding:1.75rem; }
+  .rew-lbl { font-size:12px; color:var(--green); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .rew-pts { font-family:'Syne',sans-serif; font-size:48px; font-weight:800; color:#fff; line-height:1; }
+  .rew-pts span { font-size:20px; color:var(--green); }
+  .prog-wrap { margin:1.25rem 0 6px; }
+  .prog-bar { height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .prog-fill { height:100%; width:0%; background:var(--green); border-radius:3px; transition:width 0.5s; }
+  .prog-lbl { font-size:11px; color:var(--muted); margin-top:6px; }
+  .badges-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:0 1.5rem; margin-bottom:1.5rem; }
+  .badge-tile { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .badge-tile.earned { background:rgba(0,230,118,0.05); border-color:rgba(0,230,118,0.25); }
+  .bt-icon { font-size:26px; }
+  .bt-name { font-size:10px; color:var(--muted); text-align:center; line-height:1.3; }
+  .badge-tile.earned .bt-name { color:var(--green); }
+  .activity-list { padding:0 1.5rem; }
+  .act-item { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .act-icon { font-size:18px; }
+  .act-text { font-size:13px; color:var(--text); flex: 1; }
+  .act-pts { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--green); }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(8,12,16,0.97); backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:10px 0 14px; z-index:100; }
+  .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--muted); cursor:pointer; padding:0 10px; transition:color 0.2s; }
+  .bnav-item.active, .bnav-item:hover { color:var(--green); }
+  .bnav-icon { font-size:20px; }
+
+  /* TOAST */
+  #toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--green); color:#000; padding:10px 20px; border-radius:20px; font-weight:700; font-size:13px; opacity:0; transition:all 0.3s; z-index:999; pointer-events:none; white-space:nowrap; }
+
+  /* FIREBASE NOTICE */
+  .firebase-notice { background:rgba(255,180,50,0.1); border:1px solid rgba(255,180,50,0.3); border-radius:12px; padding:12px; margin:0 1.5rem 1rem; font-size:12px; color:#ffb84a; line-height:1.5; }
+
+  ::-webkit-scrollbar { width:0; height:0; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="s-login" class="screen active">
+  <div class="auth-wrap" style="background:radial-gradient(ellipse at 30% 20%,#0a2e1a 0%,#080c10 60%);">
+    <div class="login-logo">🗺️</div>
+    <div class="login-brand">TravelGuide</div>
+    <div class="login-tagline">Discover Incredible India</div>
+    <div class="login-box">
+      <div class="inp-group">
+        <label class="inp-label">Email</label>
+        <input id="login-email" class="inp" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="inp-group">
+        <label class="inp-label">Password</label>
+        <input id="login-pass" class="inp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') fbLogin()" />
+      </div>
+      <div id="err-login" class="err-box"></div>
+      <button id="login-btn" class="btn-main" onclick="fbLogin()">Sign In →</button>
+      <div class="login-divider">— or —</div>
+      <div class="login-footer">New user? <span onclick="goRaw('signup')">Create Account → (+100 pts!)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SIGNUP ===== -->
+<div id="s-signup" class="screen">
+  <div class="auth-wrap" style="background:radial-gradient(ellipse at 70% 80%,#0a1e2e 0%,#080c10 60%);">
+    <div class="login-logo">✈️</div>
+    <div class="login-brand">Join TravelGuide</div>
+    <div class="login-tagline">Create Your Free Account</div>
+    <div class="login-box">
+      <div class="inp-group">
+        <label class="inp-label">Full Name</label>
+        <input id="signup-name" class="inp" type="text" placeholder="Apna naam daalo" />
+      </div>
+      <div class="inp-group">
+        <label class="inp-label">Email</label>
+        <input id="signup-email" class="inp" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="inp-group">
+        <label class="inp-label">Password (min 6 characters)</label>
+        <input id="signup-pass" class="inp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') fbSignup()" />
+      </div>
+      <div id="err-signup" class="err-box"></div>
+      <button id="signup-btn" class="btn-main" onclick="fbSignup()">Create Account → (+100 pts!)</button>
+      <div class="login-divider">— or —</div>
+      <div class="login-footer">Already have account? <span onclick="goRaw('login')">Sign In →</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HOME ===== -->
+<div id="s-home" class="screen">
+  <div class="home-hero">
+    <div class="hero-toprow">
+      <div class="hero-greeting">Good Morning, <span id="hero-name">Traveller</span> 👋</div>
+      <button class="btn-logout" onclick="fbLogout()">Logout</button>
+    </div>
+    <div class="hero-title">Where to<br/><span>explore today?</span></div>
+    <div class="weather-strip">
+      <div class="weather-chip" id="weather-badge">🌤️ Loading weather...</div>
+      <div class="weather-chip" id="traffic-chip">🚗 Traffic: Moderate</div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <span class="search-placeholder">Search beaches, temples, mountains...</span>
+    </div>
+  </div>
+
+  <div class="section-hd">Categories</div>
+  <div class="cats-row">
+    <div class="cat-btn sel" onclick="selectCat(this,'Beaches')"><div class="cat-circle">🏖️</div><div class="cat-name">Beaches</div></div>
+    <div class="cat-btn" onclick="selectCat(this,'Mountains')"><div class="cat-circle">⛰️</div><div class="cat-name">Mountains</div></div>
+    <div class="cat-btn" onclick="selectCat(this,'Temples')"><div class="cat-circle">🛕</div><div class="cat-name">Temples</div></div>
+    <div class="cat-btn" onclick="selectCat(this,'Monuments')"><div class="cat-circle">🏛️</div><div class="cat-name">Monuments</div></div>
+    <div class="cat-btn" onclick="selectCat(this,'Oceans')"><div class="cat-circle">🌊</div><div class="cat-name">Oceans</div></div>
+    <div class="cat-btn" onclick="selectCat(this,'Hills')"><div class="cat-circle">🌄</div><div class="cat-name">Hills</div></div>
+  </div>
+
+  <div class="section-hd">Featured Destinations</div>
+  <div class="feat-row">
+    <div class="feat-card" onclick="visitPlace('Baga Beach','Goa','🏖️')">
+      <div class="feat-bg c1"><div class="feat-emo">🏖️</div><div><div class="feat-name">Goa Beaches</div><div class="feat-sub">28 locations</div></div></div>
+    </div>
+    <div class="feat-card" onclick="visitPlace('Jaisalmer Fort','Rajasthan','🏰')">
+      <div class="feat-bg c2"><div class="feat-emo">🏰</div><div><div class="feat-name">Rajasthan</div><div class="feat-sub">42 monuments</div></div></div>
+    </div>
+    <div class="feat-card" onclick="visitPlace('Dal Lake','Kashmir','❄️')">
+      <div class="feat-bg c3"><div class="feat-emo">❄️</div><div><div class="feat-name">Kashmir</div><div class="feat-sub">35 locations</div></div></div>
+    </div>
+    <div class="feat-card" onclick="visitPlace('Meenakshi Temple','Tamil Nadu','🛕')">
+      <div class="feat-bg c4"><div class="feat-emo">🛕</div><div><div class="feat-name">Tamil Nadu</div><div class="feat-sub">60+ temples</div></div></div>
+    </div>
+  </div>
+
+  <div class="pts-strip" onclick="go('rewards')">
+    <div class="pts-icon">⭐</div>
+    <div>
+      <div class="pts-num-big pts-display">0</div>
+      <div class="pts-lbl">Reward points — tap to view</div>
+    </div>
+    <div class="pts-arrow">→</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="bnav-item active" onclick="go('home')"><div class="bnav-icon">🏠</div>Home</div>
+    <div class="bnav-item" onclick="go('explore')"><div class="bnav-icon">🔭</div>Explore</div>
+    <div class="bnav-item"><div class="bnav-icon">❤️</div>Saved</div>
+    <div class="bnav-item" onclick="go('rewards')"><div class="bnav-icon">⭐</div>Rewards</div>
+    <div class="bnav-item"><div class="bnav-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- ===== EXPLORE ===== -->
+<div id="s-explore" class="screen">
+  <div class="explore-hd">
+    <div class="back-btn" onclick="go('home')">← Back</div>
+    <div class="expl-title" id="expl-title">🏖️ Beaches</div>
+    <div class="expl-sub">Select a state to explore</div>
+  </div>
+  <div class="states-grid">
+    <div class="state-card" onclick="visitPlace('Baga Beach','Goa','🏖️')"><div class="state-inner sc1"><div><div class="state-name">Goa</div><div class="state-ct">28 beaches</div></div></div><div class="state-emo">🏖️</div></div>
+    <div class="state-card" onclick="visitPlace('Kovalam Beach','Kerala','🌴')"><div class="state-inner sc2"><div><div class="state-name">Kerala</div><div class="state-ct">19 beaches</div></div></div><div class="state-emo">🌴</div></div>
+    <div class="state-card" onclick="visitPlace('Juhu Beach','Maharashtra','🌊')"><div class="state-inner sc3"><div><div class="state-name">Maharashtra</div><div class="state-ct">14 beaches</div></div></div><div class="state-emo">🌊</div></div>
+    <div class="state-card" onclick="visitPlace('Marina Beach','Tamil Nadu','🐚')"><div class="state-inner sc4"><div><div class="state-name">Tamil Nadu</div><div class="state-ct">22 beaches</div></div></div><div class="state-emo">🐚</div></div>
+    <div class="state-card" onclick="visitPlace('Puri Beach','Odisha','🦀')"><div class="state-inner sc5"><div><div class="state-name">Odisha</div><div class="state-ct">11 beaches</div></div></div><div class="state-emo">🦀</div></div>
+    <div class="state-card" onclick="visitPlace('Rushikonda Beach','Andhra Pradesh','⛵')"><div class="state-inner sc6"><div><div class="state-name">Andhra Pradesh</div><div class="state-ct">9 beaches</div></div></div><div class="state-emo">⛵</div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bnav-item" onclick="go('home')"><div class="bnav-icon">🏠</div>Home</div>
+    <div class="bnav-item active" onclick="go('explore')"><div class="bnav-icon">🔭</div>Explore</div>
+    <div class="bnav-item"><div class="bnav-icon">❤️</div>Saved</div>
+    <div class="bnav-item" onclick="go('rewards')"><div class="bnav-icon">⭐</div>Rewards</div>
+    <div class="bnav-item"><div class="bnav-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- ===== DETAIL ===== -->
+<div id="s-detail" class="screen">
+  <div class="detail-hero">
+    <span id="detail-emoji">🏖️</span>
+    <div class="detail-hero-grad"></div>
+    <div class="detail-back" onclick="go('explore')">← Back</div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-name" id="detail-name">Baga Beach</div>
+    <div class="detail-place" id="detail-place">📍 North Goa, Goa</div>
+    <div class="badges-row">
+      <span class="badge bg">⭐ 4.7 Rating</span>
+      <span class="badge bb" id="wave-badge">🌊 Moderate Waves</span>
+      <span class="badge ba" id="weather-badge-detail">🌤️ Loading...</span>
+    </div>
+
+    <!-- TRANSPORTATION SECTION -->
+    <div class="transport-sec">
+      <div class="transport-title">🚗 Get There</div>
+      <div class="transport-grid">
+        <a id="uber-link" href="#" class="transport-btn tb-uber" onclick="bookUber(); return false;">
+          <span class="tb-icon">🚖</span>
+          <div class="tb-text">
+            <span class="tb-name">Uber</span>
+            <span class="tb-sub">Book a cab</span>
+          </div>
+          <span class="tb-badge">~₹150</span>
+        </a>
+        <a id="ola-link" href="#" class="transport-btn tb-ola" onclick="bookOla(); return false;">
+          <span class="tb-icon">🚕</span>
+          <div class="tb-text">
+            <span class="tb-name">Ola</span>
+            <span class="tb-sub">Book a cab</span>
+          </div>
+          <span class="tb-badge">~₹130</span>
+        </a>
+        <a id="maps-link" href="#" class="transport-btn tb-maps" onclick="openMaps(); return false;">
+          <span class="tb-icon">🗺️</span>
+          <div class="tb-text">
+            <span class="tb-name">Google Maps Directions</span>
+            <span class="tb-sub">Navigate with turn-by-turn directions</span>
+          </div>
+          <span class="tb-badge">Navigate</span>
+        </a>
+      </div>
+      <button class="btn-heart" onclick="savePlace()">❤️ Save Place</button>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-tile">
+        <div class="info-lbl">Weather</div>
+        <div class="info-val" id="weather-temp">--°C</div>
+        <div class="info-hint" id="weather-cond">Loading...</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-lbl">Traffic</div>
+        <div class="info-val">Moderate</div>
+        <div class="info-hint">~20 min away</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-lbl">Best Time</div>
+        <div class="info-val">Oct – Mar</div>
+        <div class="info-hint">Peak season</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-lbl">Entry Fee</div>
+        <div class="info-val">Free</div>
+        <div class="info-hint">Open 24/7</div>
+      </div>
+    </div>
+
+    <div class="nearby-sec">
+      <div class="nearby-title">Nearby Hotels & Restaurants</div>
+      <div class="nearby-item" onclick="fbAddPoints(10,'Hotel viewed')">
+        <div class="ni-icon">🏨</div>
+        <div><div class="ni-name">Titos Beach Resort</div><div class="ni-dist">0.3 km away • ₹3,500/night</div></div>
+        <div class="ni-rating">⭐ 4.5</div>
+      </div>
+      <div class="nearby-item" onclick="fbAddPoints(10,'Restaurant viewed')">
+        <div class="ni-icon">🍽️</div>
+        <div><div class="ni-name">Britto's Restaurant</div><div class="ni-dist">0.1 km away • Seafood</div></div>
+        <div class="ni-rating">⭐ 4.8</div>
+      </div>
+      <div class="nearby-item" onclick="fbAddPoints(10,'Hotel viewed')">
+        <div class="ni-icon">🏩</div>
+        <div><div class="ni-name">Sea View Inn</div><div class="ni-dist">0.5 km away • ₹2,200/night</div></div>
+        <div class="ni-rating">⭐ 4.2</div>
+      </div>
+      <div class="nearby-item" onclick="fbAddPoints(10,'Restaurant viewed')">
+        <div class="ni-icon">🍹</div>
+        <div><div class="ni-name">Curlies Beach Shack</div><div class="ni-dist">0.2 km away • Bar & Grill</div></div>
+        <div class="ni-rating">⭐ 4.6</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bnav-item" onclick="go('home')"><div class="bnav-icon">🏠</div>Home</div>
+    <div class="bnav-item" onclick="go('explore')"><div class="bnav-icon">🔭</div>Explore</div>
+    <div class="bnav-item active"><div class="bnav-icon">❤️</div>Saved</div>
+    <div class="bnav-item" onclick="go('rewards')"><div class="bnav-icon">⭐</div>Rewards</div>
+    <div class="bnav-item"><div class="bnav-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- ===== REWARDS ===== -->
+<div id="s-rewards" class="screen">
+  <div class="rew-hd">
+    <div class="back-btn" onclick="go('home')">← Back</div>
+    <div class="rew-title">Your Rewards ⭐</div>
+  </div>
+  <div class="rew-card">
+    <div class="rew-lbl">Total Points Earned</div>
+    <div class="rew-pts"><span class="pts-display">0</span> <span>pts</span></div>
+    <div class="prog-wrap">
+      <div class="prog-bar"><div class="prog-fill"></div></div>
+      <div class="prog-lbl">Loading...</div>
+    </div>
+  </div>
+  <div class="section-hd" style="padding-top:0;">Your Badges</div>
+  <div class="badges-grid">
+    <div class="badge-tile earned"><div class="bt-icon">🏖️</div><div class="bt-name">Beach Explorer</div></div>
+    <div class="badge-tile earned"><div class="bt-icon">⛰️</div><div class="bt-name">Mountain Hiker</div></div>
+    <div class="badge-tile"><div class="bt-icon">🛕</div><div class="bt-name">Temple Seeker</div></div>
+    <div class="badge-tile earned"><div class="bt-icon">🌟</div><div class="bt-name">First Trip</div></div>
+    <div class="badge-tile"><div class="bt-icon">🗺️</div><div class="bt-name">10 States</div></div>
+    <div class="badge-tile"><div class="bt-icon">👑</div><div class="bt-name">Gold Status</div></div>
+  </div>
+  <div class="section-hd" style="padding-top:0;">How to Earn Points</div>
+  <div class="activity-list">
+    <div class="act-item"><div class="act-icon">📍</div><div class="act-text">Visit any location</div><div class="act-pts">+50 pts</div></div>
+    <div class="act-item"><div class="act-icon">🚗</div><div class="act-text">Book Uber/Ola via app</div><div class="act-pts">+30 pts</div></div>
+    <div class="act-item"><div class="act-icon">🏨</div><div class="act-text">View hotel or restaurant</div><div class="act-pts">+10 pts</div></div>
+    <div class="act-item"><div class="act-icon">❤️</div><div class="act-text">Save a place</div><div class="act-pts">+20 pts</div></div>
+    <div class="act-item"><div class="act-icon">🗺️</div><div class="act-text">Open Google Maps navigation</div><div class="act-pts">+15 pts</div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="bnav-item" onclick="go('home')"><div class="bnav-icon">🏠</div>Home</div>
+    <div class="bnav-item" onclick="go('explore')"><div class="bnav-icon">🔭</div>Explore</div>
+    <div class="bnav-item"><div class="bnav-icon">❤️</div>Saved</div>
+    <div class="bnav-item active"><div class="bnav-icon">⭐</div>Rewards</div>
+    <div class="bnav-item"><div class="bnav-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  // ── SCREEN NAV ───────────────────────────────────────────────
+  const protectedScreens = ['home','explore','detail','rewards'];
+
+  function go(screen) {
+    if (protectedScreens.includes(screen) && !window._isLoggedIn) {
+      showToast('🔒 Pehle login karo!');
+      goRaw('login');
+      return;
+    }
+    goRaw(screen);
+  }
+
+  function goRaw(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('s-' + screen).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── VISIT PLACE ──────────────────────────────────────────────
+  let currentPlace = { name: 'Baga Beach', state: 'Goa', emoji: '🏖️' };
+  // Coordinates map for transport
+  const placeCoords = {
+    'Baga Beach': { lat: 15.5556, lng: 73.7516 },
+    'Kovalam Beach': { lat: 8.3988, lng: 76.9821 },
+    'Juhu Beach': { lat: 19.0969, lng: 72.8267 },
+    'Marina Beach': { lat: 13.0500, lng: 80.2824 },
+    'Puri Beach': { lat: 19.8014, lng: 85.8252 },
+    'Rushikonda Beach': { lat: 17.7856, lng: 83.3799 },
+    'Jaisalmer Fort': { lat: 26.9124, lng: 70.9069 },
+    'Dal Lake': { lat: 34.0837, lng: 74.7973 },
+    'Meenakshi Temple': { lat: 9.9195, lng: 78.1193 },
+  };
+
+  function visitPlace(name, state, emoji) {
+    currentPlace = { name, state, emoji };
+    document.getElementById('detail-name').textContent = name;
+    document.getElementById('detail-place').textContent = '📍 ' + state;
+    document.getElementById('detail-emoji').textContent = emoji;
+    loadWeather();
+    go('detail');
+    if (window._isLoggedIn) fbAddPoints(50, 'Visited ' + name);
+  }
+
+  // ── TRANSPORTATION ───────────────────────────────────────────
+  function getCoords() {
+    return placeCoords[currentPlace.name] || { lat: 15.5556, lng: 73.7516 };
+  }
+
+  function bookUber() {
+    const c = getCoords();
+    // Uber deeplink — opens Uber app or website
+    const uberUrl = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${c.lat}&dropoff[longitude]=${c.lng}&dropoff[nickname]=${encodeURIComponent(currentPlace.name)}`;
+    window.open(uberUrl, '_blank');
+    if (window._isLoggedIn) fbAddPoints(30, 'Uber booked');
+  }
+
+  function bookOla() {
+    const c = getCoords();
+    // Ola deeplink
+    const olaUrl = `https://book.olacabs.com/?drop_lat=${c.lat}&drop_lng=${c.lng}&drop_name=${encodeURIComponent(currentPlace.name)}`;
+    window.open(olaUrl, '_blank');
+    if (window._isLoggedIn) fbAddPoints(30, 'Ola booked');
+  }
+
+  function openMaps() {
+    const c = getCoords();
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&destination_place_name=${encodeURIComponent(currentPlace.name)}&travelmode=driving`;
+    window.open(mapsUrl, '_blank');
+    if (window._isLoggedIn) fbAddPoints(15, 'Maps opened');
+  }
+
+  function savePlace() {
+    showToast('❤️ ' + currentPlace.name + ' saved!');
+    if (window._isLoggedIn) fbAddPoints(20, 'Place saved');
+  }
+
+  // ── WEATHER API (Open-Meteo — Free, no key needed) ───────────
+  async function loadWeather() {
+    try {
+      const c = getCoords();
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current_weather=true&temperature_unit=celsius`);
+      const data = await res.json();
+      const temp = Math.round(data.current_weather.temperature);
+      const code = data.current_weather.weathercode;
+      const cond = code <= 1 ? 'Sunny ☀️' : code <= 3 ? 'Partly Cloudy ⛅' : code <= 48 ? 'Foggy 🌫️' : code <= 67 ? 'Rainy 🌧️' : 'Clear 🌤️';
+      document.getElementById('weather-temp').textContent = temp + '°C';
+      document.getElementById('weather-cond').textContent = cond;
+      document.getElementById('weather-badge').textContent = '🌤️ ' + temp + '°C ' + (code <= 3 ? 'Clear' : 'Cloudy');
+      document.getElementById('weather-badge-detail').textContent = '🌡️ ' + temp + '°C ' + cond;
+    } catch(e) {
+      document.getElementById('weather-temp').textContent = '32°C';
+      document.getElementById('weather-cond').textContent = 'Sunny ☀️';
+    }
+  }
+
+  // ── CATEGORY SELECT ──────────────────────────────────────────
+  function selectCat(el, name) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+    document.getElementById('expl-title').textContent = el.querySelector('.cat-circle').textContent + ' ' + name;
+    go('explore');
+    if (window._isLoggedIn) fbAddPoints(5, 'Category explored');
+  }
+
+  // ── TOAST ────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 2500);
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById('err-' + id);
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+  function clearError(id) {
+    const el = document.getElementById('err-' + id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+  }
+  function showLoading(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.disabled = true; }
+  }
+  function hideLoading(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.disabled = false; }
+  }
+
+  // Init
+  window._isLoggedIn = false;
+  window._points = 0;
+  window.onload = () => goRaw('login');
+</script>
+</body>
+</html>
