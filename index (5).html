@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TravelGuide India</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--g:#00e676;--gd:#00c853;--dark:#080c10;--card:#0e1318;--card2:#141b22;--bdr:rgba(0,230,118,0.15);--text:#e8f0e8;--muted:#607060;--r:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;animation:fi 0.3s ease}
+.screen.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* AUTH */
+.auth-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem}
+.logo-box{width:72px;height:72px;background:var(--g);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:1.5rem;box-shadow:0 0 40px rgba(0,230,118,0.3)}
+.brand{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;margin-bottom:4px}
+.tagline{font-size:12px;color:var(--muted);margin-bottom:2rem;letter-spacing:1px;text-transform:uppercase}
+.auth-box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--bdr);border-radius:20px;padding:1.75rem}
+.lbl{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+.inp{width:100%;background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;margin-bottom:1rem}
+.inp:focus{border-color:var(--g)}
+.btn{width:100%;background:var(--g);color:#000;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;padding:14px;border-radius:12px;border:none;cursor:pointer;transition:all 0.2s}
+.btn:hover{background:var(--gd);transform:translateY(-1px)}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.err{display:none;color:#ff4d6d;font-size:13px;padding:9px 12px;background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.2);border-radius:8px;margin-bottom:10px;text-align:center}
+.divider{text-align:center;color:var(--muted);font-size:12px;margin:1rem 0}
+.link-text{text-align:center;font-size:13px;color:var(--muted);margin-top:1rem}
+.link-text span{color:var(--g);cursor:pointer;font-weight:500}
+/* HOME */
+#s-home{padding-bottom:75px}
+.hero{background:linear-gradient(160deg,#0a2e1a,var(--dark));padding:3.5rem 1.5rem 1.5rem;position:relative;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.greeting{font-size:12px;color:var(--g);text-transform:uppercase;letter-spacing:2px}
+.logout-btn{background:rgba(255,77,109,0.15);border:1px solid rgba(255,77,109,0.3);color:#ff4d6d;font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.hero-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:1rem}
+.hero-title span{color:var(--g)}
+.weather-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.chip{background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.18);border-radius:10px;padding:5px 12px;font-size:12px;color:var(--g)}
+.search-box{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.search-box input{background:transparent;border:none;outline:none;color:var(--text);font-size:14px;width:100%;font-family:'DM Sans',sans-serif}
+.sec-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;padding:1.25rem 1.5rem 0.6rem}
+.cats{display:flex;gap:10px;padding:0 1.5rem;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.cats::-webkit-scrollbar{display:none}
+.cat{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px;cursor:pointer}
+.cat-icon{width:56px;height:56px;border-radius:18px;background:var(--card);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:22px;transition:all 0.2s}
+.cat.active .cat-icon,.cat:hover .cat-icon{background:var(--g);border-color:var(--g);transform:scale(1.05)}
+.cat-name{font-size:10px;color:var(--muted);text-align:center}
+.feat-row{display:flex;gap:12px;padding:0 1.5rem;overflow-x:auto;scrollbar-width:none}
+.feat-row::-webkit-scrollbar{display:none}
+.feat-card{min-width:200px;height:140px;border-radius:var(--r);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform 0.2s;position:relative}
+.feat-card:hover{transform:scale(1.02)}
+.fc-bg{width:100%;height:100%;display:flex;align-items:flex-end;padding:12px}
+.fc1{background:linear-gradient(135deg,#1a6b4a,#0d3b28)}
+.fc2{background:linear-gradient(135deg,#6b3a1a,#3b1a0d)}
+.fc3{background:linear-gradient(135deg,#1a3a6b,#0d1f3b)}
+.fc4{background:linear-gradient(135deg,#4a1a6b,#281040)}
+.fc-emo{position:absolute;top:12px;right:12px;font-size:26px}
+.fc-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff}
+.fc-sub{font-size:10px;color:rgba(255,255,255,0.5)}
+.pts-bar{margin:1.25rem 1.5rem;background:linear-gradient(120deg,#0a2e1a,#0d1f12);border:1px solid rgba(0,230,118,0.2);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.pts-num{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--g)}
+.pts-lbl{font-size:11px;color:var(--muted)}
+/* EXPLORE */
+#s-explore{padding-bottom:75px}
+.expl-hd{padding:3.5rem 1.5rem 1rem;background:linear-gradient(160deg,#0a2e1a,var(--dark))}
+.back{color:var(--g);font-size:13px;cursor:pointer;margin-bottom:0.75rem;display:flex;align-items:center;gap:5px;font-weight:500}
+.expl-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.expl-sub{font-size:12px;color:var(--muted);margin-top:3px;margin-bottom:0.75rem}
+.expl-search{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px}
+.expl-search input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;width:100%;font-family:'DM Sans',sans-serif}
+.states-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:1rem 1.5rem}
+.state-card{border-radius:var(--r);height:110px;position:relative;overflow:hidden;cursor:pointer;transition:transform 0.2s}
+.state-card:hover{transform:scale(1.02)}
+.sc-inner{width:100%;height:100%;display:flex;align-items:flex-end;padding:10px}
+.c1{background:linear-gradient(135deg,#1a6b4a,#0d3b28)}
+.c2{background:linear-gradient(135deg,#6b1a4a,#3b0d28)}
+.c3{background:linear-gradient(135deg,#1a4a6b,#0d283b)}
+.c4{background:linear-gradient(135deg,#6b4a1a,#3b280d)}
+.c5{background:linear-gradient(135deg,#4a6b1a,#283b0d)}
+.c6{background:linear-gradient(135deg,#6b1a1a,#3b0d0d)}
+.sc-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
+.sc-ct{font-size:10px;color:rgba(255,255,255,0.55)}
+.sc-emo{position:absolute;top:8px;right:8px;font-size:20px}
+/* DETAIL */
+#s-detail{padding-bottom:75px}
+.d-hero{height:220px;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative;background:linear-gradient(135deg,#1a6b4a,#0d3b28)}
+.d-grad{position:absolute;bottom:0;left:0;right:0;height:70px;background:linear-gradient(transparent,var(--dark))}
+.d-back{position:absolute;top:3.5rem;left:1.5rem;color:var(--g);cursor:pointer;font-size:12px;background:rgba(0,0,0,0.5);padding:6px 12px;border-radius:20px}
+.d-body{padding:0.5rem 1.5rem 1rem}
+.d-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff}
+.d-place{font-size:13px;color:var(--g);margin-top:3px}
+.badges{display:flex;gap:7px;margin:0.75rem 0;flex-wrap:wrap}
+.bdg{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:rgba(0,230,118,0.12);color:var(--g)}
+.bb{background:rgba(100,180,255,0.12);color:#6ab4ff}
+.ba{background:rgba(255,180,50,0.12);color:#ffb84a}
+/* TRANSPORT */
+.transport{margin:0.75rem 0}
+.t-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:10px}
+.t-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.t-btn{border-radius:12px;padding:12px;display:flex;align-items:center;gap:8px;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none;width:100%}
+.t-btn:hover{transform:translateY(-2px)}
+.tb-uber{background:#000;border:1.5px solid #333;color:#fff}
+.tb-ola{background:#1a1200;border:1.5px solid #3a2a00;color:#fff}
+.tb-maps{background:#0a1a2e;border:1.5px solid #1a3a4a;color:#fff;grid-column:1/-1}
+.t-icon{font-size:20px}
+.t-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;flex:1;text-align:left}
+.t-price{font-size:10px;padding:3px 7px;border-radius:8px;background:rgba(255,255,255,0.1);color:#aaa}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0.75rem 0}
+.info-tile{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:12px}
+.info-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.info-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff}
+.info-hint{font-size:10px;color:var(--g);margin-top:2px}
+.nearby-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin:0.75rem 0 8px}
+.nearby-item{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:7px;cursor:pointer;transition:border 0.2s}
+.nearby-item:hover{border-color:var(--g)}
+.ni-icon{font-size:20px}
+.ni-name{font-size:13px;font-weight:500;color:var(--text)}
+.ni-dist{font-size:10px;color:var(--muted)}
+.ni-rating{margin-left:auto;font-size:11px;color:#ffb84a;font-weight:600}
+.save-btn{margin-top:8px;background:transparent;border:1px solid var(--bdr);color:var(--text);font-size:13px;padding:10px 20px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s}
+.save-btn:hover{border-color:#ff4d6d;color:#ff4d6d}
+/* REWARDS */
+#s-rewards{padding-bottom:75px}
+.rew-hd{padding:3.5rem 1.5rem 1rem;background:linear-gradient(160deg,#0a2e1a,var(--dark))}
+.rew-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.rew-card{margin:0 1.5rem 1.25rem;background:linear-gradient(120deg,#0a2e1a,#0d1a0d);border:1px solid rgba(0,230,118,0.25);border-radius:20px;padding:1.5rem}
+.rew-lbl{font-size:11px;color:var(--g);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.rew-pts{font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:#fff;line-height:1}
+.rew-pts span{font-size:18px;color:var(--g)}
+.prog-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;margin:1rem 0 5px;overflow:hidden}
+.prog-fill{height:100%;background:var(--g);border-radius:3px;width:0%;transition:width 0.5s}
+.prog-lbl{font-size:11px;color:var(--muted)}
+.bdg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 1.5rem;margin-bottom:1.25rem}
+.bdg-tile{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bdg-tile.earned{background:rgba(0,230,118,0.05);border-color:rgba(0,230,118,0.25)}
+.bt-icon{font-size:24px}
+.bt-name{font-size:9px;color:var(--muted);text-align:center;line-height:1.3}
+.bdg-tile.earned .bt-name{color:var(--g)}
+.act-list{padding:0 1.5rem}
+.act-item{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:11px;display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.act-icon{font-size:16px}
+.act-text{font-size:12px;color:var(--text);flex:1}
+.act-pts{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--g)}
+/* PROFILE */
+#s-profile{padding-bottom:75px}
+.prof-hd{background:linear-gradient(160deg,#0a2e1a,var(--dark));padding:3.5rem 1.5rem 1.5rem}
+.prof-avatar{width:68px;height:68px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#000;font-family:'Syne',sans-serif;margin-bottom:0.75rem}
+.prof-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.prof-email{font-size:12px;color:var(--muted);margin-top:2px}
+.prof-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:1rem}
+.prof-stat{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:10px;text-align:center}
+.ps-num{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--g)}
+.ps-lbl{font-size:10px;color:var(--muted)}
+.prof-menu{margin:1rem 1.5rem}
+.pm-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:10px}
+.pm-item{background:var(--card);border:1px solid var(--bdr);border-radius:0;padding:13px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.2s}
+.pm-item:first-child{border-radius:12px 12px 0 0}
+.pm-item:last-child{border-radius:0 0 12px 12px}
+.pm-item:not(:last-child){border-bottom:none}
+.pm-item:hover{background:var(--card2)}
+.pm-icon{font-size:18px}
+.pm-text{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.pm-sub{font-size:10px;color:var(--muted)}
+.pm-arr{color:var(--muted);font-size:14px}
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(8,12,16,0.97);backdrop-filter:blur(20px);border-top:1px solid var(--bdr);display:flex;justify-content:space-around;padding:9px 0 13px;z-index:100}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;padding:0 8px;transition:color 0.2s}
+.bn-item.active,.bn-item:hover{color:var(--g)}
+.bn-icon{font-size:19px}
+/* TOAST */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--g);color:#000;padding:9px 18px;border-radius:20px;font-weight:700;font-size:12px;opacity:0;transition:all 0.3s;z-index:999;pointer-events:none;white-space:nowrap}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="s-login" class="screen active">
+  <div class="auth-page" style="background:radial-gradient(ellipse at 30% 20%,#0a2e1a,#080c10)">
+    <div class="logo-box">🗺️</div>
+    <div class="brand">TravelGuide</div>
+    <div class="tagline">Discover Incredible India</div>
+    <div class="auth-box">
+      <label class="lbl">Email</label>
+      <input id="li-email" class="inp" type="email" placeholder="you@example.com"/>
+      <label class="lbl">Password</label>
+      <input id="li-pass" class="inp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div id="li-err" class="err"></div>
+      <button id="li-btn" class="btn" onclick="doLogin()">Sign In →</button>
+      <div class="divider">— or —</div>
+      <div class="link-text">New user? <span onclick="show('signup')">Create Account → (+100 pts!)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div id="s-signup" class="screen">
+  <div class="auth-page" style="background:radial-gradient(ellipse at 70% 80%,#0a1e2e,#080c10)">
+    <div class="logo-box">✈️</div>
+    <div class="brand">Join TravelGuide</div>
+    <div class="tagline">Create Free Account</div>
+    <div class="auth-box">
+      <label class="lbl">Full Name</label>
+      <input id="su-name" class="inp" type="text" placeholder="Apna naam daalo"/>
+      <label class="lbl">Email</label>
+      <input id="su-email" class="inp" type="email" placeholder="you@example.com"/>
+      <label class="lbl">Password (min 6 characters)</label>
+      <input id="su-pass" class="inp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()"/>
+      <div id="su-err" class="err"></div>
+      <button id="su-btn" class="btn" onclick="doSignup()">Create Account →</button>
+      <div class="divider">— or —</div>
+      <div class="link-text">Already have account? <span onclick="show('login')">Sign In →</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="s-home" class="screen">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="greeting">Good Morning, <span id="h-name">Traveller</span> 👋</div>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+    <div class="hero-title">Where to<br/><span>explore today?</span></div>
+    <div class="weather-row">
+      <div class="chip" id="w-chip">🌤️ Loading...</div>
+      <div class="chip">🚗 Traffic: Moderate</div>
+    </div>
+    <div class="search-box">
+      <span>🔍</span>
+      <input id="home-search" type="text" placeholder="Search states, places..." onkeydown="if(event.key==='Enter')doSearch()"/>
+    </div>
+  </div>
+  <div class="sec-title">Categories</div>
+  <div class="cats">
+    <div class="cat active" onclick="selCat(this,'Beaches')"><div class="cat-icon">🏖️</div><div class="cat-name">Beaches</div></div>
+    <div class="cat" onclick="selCat(this,'Mountains')"><div class="cat-icon">⛰️</div><div class="cat-name">Mountains</div></div>
+    <div class="cat" onclick="selCat(this,'Temples')"><div class="cat-icon">🛕</div><div class="cat-name">Temples</div></div>
+    <div class="cat" onclick="selCat(this,'Monuments')"><div class="cat-icon">🏛️</div><div class="cat-name">Monuments</div></div>
+    <div class="cat" onclick="selCat(this,'Oceans')"><div class="cat-icon">🌊</div><div class="cat-name">Oceans</div></div>
+    <div class="cat" onclick="selCat(this,'Hills')"><div class="cat-icon">🌄</div><div class="cat-name">Hills</div></div>
+  </div>
+  <div class="sec-title">Featured Destinations</div>
+  <div class="feat-row">
+    <div class="feat-card" onclick="visit('Baga Beach','Goa','🏖️')"><div class="fc-bg fc1"><div class="fc-emo">🏖️</div><div><div class="fc-name">Goa Beaches</div><div class="fc-sub">28 locations</div></div></div></div>
+    <div class="feat-card" onclick="visit('Jaisalmer Fort','Rajasthan','🏰')"><div class="fc-bg fc2"><div class="fc-emo">🏰</div><div><div class="fc-name">Rajasthan</div><div class="fc-sub">42 forts</div></div></div></div>
+    <div class="feat-card" onclick="visit('Dal Lake','Kashmir','❄️')"><div class="fc-bg fc3"><div class="fc-emo">❄️</div><div><div class="fc-name">Kashmir</div><div class="fc-sub">35 places</div></div></div></div>
+    <div class="feat-card" onclick="visit('Meenakshi Temple','Tamil Nadu','🛕')"><div class="fc-bg fc4"><div class="fc-emo">🛕</div><div><div class="fc-name">Tamil Nadu</div><div class="fc-sub">60+ temples</div></div></div></div>
+  </div>
+  <div class="pts-bar" onclick="show('rewards')">
+    <span style="font-size:26px">⭐</span>
+    <div><div class="pts-num" id="h-pts">0</div><div class="pts-lbl">Reward points — tap to view</div></div>
+    <span style="color:var(--g);margin-left:auto">→</span>
+  </div>
+  <div class="bnav">
+    <div class="bn-item active" onclick="show('home')"><div class="bn-icon">🏠</div>Home</div>
+    <div class="bn-item" onclick="show('explore')"><div class="bn-icon">🔭</div>Explore</div>
+    <div class="bn-item"><div class="bn-icon">❤️</div>Saved</div>
+    <div class="bn-item" onclick="show('rewards')"><div class="bn-icon">⭐</div>Rewards</div>
+    <div class="bn-item" onclick="show('profile')"><div class="bn-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- EXPLORE -->
+<div id="s-explore" class="screen">
+  <div class="expl-hd">
+    <div class="back" onclick="show('home')">← Back</div>
+    <div class="expl-title" id="ex-title">🏖️ Beaches</div>
+    <div class="expl-sub">Select a state to explore</div>
+    <div class="expl-search"><span>🔍</span><input id="st-search" type="text" placeholder="Search state..." oninput="filterStates()"/></div>
+  </div>
+  <div class="states-grid" id="states-grid" style="padding-bottom:80px"></div>
+  <div class="bnav">
+    <div class="bn-item" onclick="show('home')"><div class="bn-icon">🏠</div>Home</div>
+    <div class="bn-item active" onclick="show('explore')"><div class="bn-icon">🔭</div>Explore</div>
+    <div class="bn-item"><div class="bn-icon">❤️</div>Saved</div>
+    <div class="bn-item" onclick="show('rewards')"><div class="bn-icon">⭐</div>Rewards</div>
+    <div class="bn-item" onclick="show('profile')"><div class="bn-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div id="s-detail" class="screen">
+  <div class="d-hero" id="d-hero">
+    <span id="d-emoji">🏖️</span>
+    <div class="d-grad"></div>
+    <div class="d-back" onclick="show('explore')">← Back</div>
+  </div>
+  <div class="d-body">
+    <div class="d-name" id="d-name">Baga Beach</div>
+    <div class="d-place" id="d-place">📍 Goa</div>
+    <div class="badges">
+      <span class="bdg bg">⭐ 4.7 Rating</span>
+      <span class="bdg bb" id="d-wave">🌊 Moderate Waves</span>
+      <span class="bdg ba" id="d-weather">🌡️ Loading...</span>
+    </div>
+    <div class="transport">
+      <div class="t-title">🚗 Get There</div>
+      <div class="t-grid">
+        <button class="t-btn tb-uber" onclick="bookUber()"><span class="t-icon">🚖</span><span class="t-name">Uber</span><span class="t-price">~₹150</span></button>
+        <button class="t-btn tb-ola" onclick="bookOla()"><span class="t-icon">🚕</span><span class="t-name">Ola</span><span class="t-price">~₹130</span></button>
+        <button class="t-btn tb-maps" onclick="openMaps()"><span class="t-icon">🗺️</span><span class="t-name">Google Maps — Navigate</span><span class="t-price">Free</span></button>
+      </div>
+      <button class="save-btn" onclick="savePlace()">❤️ Save this place (+20 pts)</button>
+    </div>
+    <div class="info-grid">
+      <div class="info-tile"><div class="info-lbl">Weather</div><div class="info-val" id="d-temp">--°C</div><div class="info-hint" id="d-cond">Loading...</div></div>
+      <div class="info-tile"><div class="info-lbl">Traffic</div><div class="info-val">Moderate</div><div class="info-hint">~20 min away</div></div>
+      <div class="info-tile"><div class="info-lbl">Best Time</div><div class="info-val">Oct–Mar</div><div class="info-hint">Peak season</div></div>
+      <div class="info-tile"><div class="info-lbl">Entry</div><div class="info-val">Free</div><div class="info-hint">Open 24/7</div></div>
+    </div>
+    <div class="nearby-title">Nearby Hotels & Restaurants</div>
+    <div class="nearby-item" onclick="addPts(10,'Hotel viewed')"><div class="ni-icon">🏨</div><div><div class="ni-name">Titos Beach Resort</div><div class="ni-dist">0.3 km • ₹3,500/night</div></div><div class="ni-rating">⭐ 4.5</div></div>
+    <div class="nearby-item" onclick="addPts(10,'Restaurant viewed')"><div class="ni-icon">🍽️</div><div><div class="ni-name">Britto's Restaurant</div><div class="ni-dist">0.1 km • Seafood</div></div><div class="ni-rating">⭐ 4.8</div></div>
+    <div class="nearby-item" onclick="addPts(10,'Hotel viewed')"><div class="ni-icon">🏩</div><div><div class="ni-name">Sea View Inn</div><div class="ni-dist">0.5 km • ₹2,200/night</div></div><div class="ni-rating">⭐ 4.2</div></div>
+    <div class="nearby-item" onclick="addPts(10,'Restaurant viewed')"><div class="ni-icon">🍹</div><div><div class="ni-name">Curlies Beach Shack</div><div class="ni-dist">0.2 km • Bar & Grill</div></div><div class="ni-rating">⭐ 4.6</div></div>
+  </div>
+  <div class="bnav">
+    <div class="bn-item" onclick="show('home')"><div class="bn-icon">🏠</div>Home</div>
+    <div class="bn-item" onclick="show('explore')"><div class="bn-icon">🔭</div>Explore</div>
+    <div class="bn-item active"><div class="bn-icon">❤️</div>Saved</div>
+    <div class="bn-item" onclick="show('rewards')"><div class="bn-icon">⭐</div>Rewards</div>
+    <div class="bn-item" onclick="show('profile')"><div class="bn-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- REWARDS -->
+<div id="s-rewards" class="screen">
+  <div class="rew-hd">
+    <div class="back" onclick="show('home')">← Back</div>
+    <div class="rew-title">Your Rewards ⭐</div>
+  </div>
+  <div class="rew-card">
+    <div class="rew-lbl">Total Points</div>
+    <div class="rew-pts"><span id="r-pts">0</span> <span>pts</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r-prog"></div></div>
+    <div class="prog-lbl" id="r-lbl">Loading...</div>
+  </div>
+  <div class="sec-title" style="padding-top:0">Badges</div>
+  <div class="bdg-grid">
+    <div class="bdg-tile earned"><div class="bt-icon">🏖️</div><div class="bt-name">Beach Explorer</div></div>
+    <div class="bdg-tile earned"><div class="bt-icon">🌟</div><div class="bt-name">First Trip</div></div>
+    <div class="bdg-tile earned"><div class="bt-icon">⛰️</div><div class="bt-name">Mountain Hiker</div></div>
+    <div class="bdg-tile"><div class="bt-icon">🛕</div><div class="bt-name">Temple Seeker</div></div>
+    <div class="bdg-tile"><div class="bt-icon">🗺️</div><div class="bt-name">10 States</div></div>
+    <div class="bdg-tile"><div class="bt-icon">👑</div><div class="bt-name">Gold Status</div></div>
+  </div>
+  <div class="sec-title" style="padding-top:0">How to Earn</div>
+  <div class="act-list">
+    <div class="act-item"><div class="act-icon">📍</div><div class="act-text">Visit any location</div><div class="act-pts">+50 pts</div></div>
+    <div class="act-item"><div class="act-icon">🚗</div><div class="act-text">Book Uber or Ola</div><div class="act-pts">+30 pts</div></div>
+    <div class="act-item"><div class="act-icon">❤️</div><div class="act-text">Save a place</div><div class="act-pts">+20 pts</div></div>
+    <div class="act-item"><div class="act-icon">🏨</div><div class="act-text">View hotel/restaurant</div><div class="act-pts">+10 pts</div></div>
+    <div class="act-item"><div class="act-icon">🗺️</div><div class="act-text">Open Google Maps</div><div class="act-pts">+15 pts</div></div>
+  </div>
+  <div class="bnav">
+    <div class="bn-item" onclick="show('home')"><div class="bn-icon">🏠</div>Home</div>
+    <div class="bn-item" onclick="show('explore')"><div class="bn-icon">🔭</div>Explore</div>
+    <div class="bn-item"><div class="bn-icon">❤️</div>Saved</div>
+    <div class="bn-item active"><div class="bn-icon">⭐</div>Rewards</div>
+    <div class="bn-item" onclick="show('profile')"><div class="bn-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="s-profile" class="screen">
+  <div class="prof-hd">
+    <div class="back" onclick="show('home')">← Back</div>
+    <div class="prof-avatar" id="p-avatar">S</div>
+    <div class="prof-name" id="p-name">Traveller</div>
+    <div class="prof-email" id="p-email">Loading...</div>
+    <div class="prof-stats">
+      <div class="prof-stat"><div class="ps-num" id="p-pts">0</div><div class="ps-lbl">Points</div></div>
+      <div class="prof-stat"><div class="ps-num" id="p-visits">0</div><div class="ps-lbl">Visited</div></div>
+      <div class="prof-stat"><div class="ps-num">3</div><div class="ps-lbl">Badges</div></div>
+    </div>
+  </div>
+  <div class="prof-menu">
+    <div class="pm-title">Settings</div>
+    <div class="pm-item" onclick="show('rewards')"><span class="pm-icon">⭐</span><div><div class="pm-text">My Rewards</div><div class="pm-sub">Points & badges</div></div><span class="pm-arr">→</span></div>
+    <div class="pm-item" onclick="show('explore')"><span class="pm-icon">🗺️</span><div><div class="pm-text">Explore Places</div><div class="pm-sub">All 29 states</div></div><span class="pm-arr">→</span></div>
+    <div class="pm-item"><span class="pm-icon">🔔</span><div><div class="pm-text">Notifications</div><div class="pm-sub">Manage alerts</div></div><span class="pm-arr">→</span></div>
+    <div class="pm-item" onclick="doLogout()" style="border-top:1px solid var(--bdr)"><span class="pm-icon">🚪</span><div><div class="pm-text" style="color:#ff4d6d">Logout</div><div class="pm-sub">Sign out</div></div><span class="pm-arr" style="color:#ff4d6d">→</span></div>
+  </div>
+  <div class="bnav">
+    <div class="bn-item" onclick="show('home')"><div class="bn-icon">🏠</div>Home</div>
+    <div class="bn-item" onclick="show('explore')"><div class="bn-icon">🔭</div>Explore</div>
+    <div class="bn-item"><div class="bn-icon">❤️</div>Saved</div>
+    <div class="bn-item" onclick="show('rewards')"><div class="bn-icon">⭐</div>Rewards</div>
+    <div class="bn-item active"><div class="bn-icon">👤</div>Profile</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── USER DATABASE (localStorage) ─────────────────────────────
+function getDB(){ try{ return JSON.parse(localStorage.getItem('tg_db')||'{}'); }catch(e){ return {}; } }
+function saveDB(d){ localStorage.setItem('tg_db', JSON.stringify(d)); }
+function getSession(){ try{ return JSON.parse(sessionStorage.getItem('tg_user')||'null'); }catch(e){ return null; } }
+function saveSession(u){ sessionStorage.setItem('tg_user', JSON.stringify(u)); }
+function clearSession(){ sessionStorage.removeItem('tg_user'); }
+
+let _user = null;
+let _visits = 0;
+
+// ── SCREEN NAV ────────────────────────────────────────────────
+const PROTECTED = ['home','explore','detail','rewards','profile'];
+function show(s){
+  if(PROTECTED.includes(s) && !_user){ toast('🔒 Pehle login karo!'); showRaw('login'); return; }
+  showRaw(s);
+}
+function showRaw(s){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('s-'+s).classList.add('active');
+  window.scrollTo(0,0);
+  if(s==='home') updateHome();
+  if(s==='rewards') updateRewards();
+  if(s==='profile') updateProfile();
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function doSignup(){
+  const name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim().toLowerCase();
+  const pass = document.getElementById('su-pass').value.trim();
+  clearErr('su');
+  if(!name){ setErr('su','⚠️ Naam daalo!'); return; }
+  if(!email || !email.includes('@')){ setErr('su','⚠️ Sahi email daalo!'); return; }
+  if(pass.length < 6){ setErr('su','⚠️ Password kam se kam 6 characters!'); return; }
+  const db = getDB();
+  if(db[email]){ 
+    setErr('su','⚠️ Ye email already registered hai!');
+    setTimeout(()=>{ clearErr('su'); document.getElementById('li-email').value=email; showRaw('login'); }, 1500);
+    return; 
+  }
+  db[email] = { name, email, pass, points:100, visits:0, joined: new Date().toISOString() };
+  saveDB(db);
+  _user = db[email];
+  saveSession(_user);
+  toast('🎉 Welcome '+name+'! 100 bonus points!');
+  showRaw('home');
+}
+
+function doLogin(){
+  const email = document.getElementById('li-email').value.trim().toLowerCase();
+  const pass = document.getElementById('li-pass').value.trim();
+  clearErr('li');
+  if(!email || !pass){ setErr('li','⚠️ Email aur password dono bharo!'); return; }
+  if(!email.includes('@')){ setErr('li','⚠️ Sahi email daalo!'); return; }
+  const db = getDB();
+  if(!db[email]){ setErr('li','❌ Account nahi mila! Pehle Sign Up karo.'); return; }
+  if(db[email].pass !== pass){ setErr('li','❌ Password galat hai!'); return; }
+  _user = db[email];
+  saveSession(_user);
+  clearErr('li');
+  toast('Welcome back, '+_user.name.split(' ')[0]+'! 👋');
+  showRaw('home');
+}
+
+function doLogout(){
+  _user = null;
+  _visits = 0;
+  clearSession();
+  showRaw('login');
+}
+
+// ── POINTS ────────────────────────────────────────────────────
+function addPts(n, reason){
+  if(!_user) return;
+  _user.points = (_user.points||0) + n;
+  const db = getDB();
+  if(db[_user.email]){ db[_user.email].points = _user.points; saveDB(db); saveSession(_user); }
+  updateAllPts();
+  toast('+'+n+' pts — '+reason+'! ⭐');
+}
+
+function updateAllPts(){
+  const p = _user ? (_user.points||0) : 0;
+  document.querySelectorAll('#h-pts,#r-pts,#p-pts').forEach(el=>{ if(el) el.textContent = p.toLocaleString(); });
+  const fill = Math.min((p/2000)*100,100);
+  const prog = document.getElementById('r-prog');
+  if(prog) prog.style.width = fill+'%';
+  const lbl = document.getElementById('r-lbl');
+  if(lbl){ const n=Math.max(2000-p,0); lbl.textContent = n>0 ? n+' pts more to reach Gold 🥇' : '🥇 Gold Status Achieved!'; }
+}
+
+// ── HOME UPDATE ───────────────────────────────────────────────
+function updateHome(){
+  if(!_user) return;
+  const el = document.getElementById('h-name');
+  if(el) el.textContent = _user.name.split(' ')[0];
+  updateAllPts();
+  loadWeather();
+}
+
+// ── PROFILE UPDATE ────────────────────────────────────────────
+function updateProfile(){
+  if(!_user) return;
+  const n = _user.name||'Traveller';
+  document.getElementById('p-name').textContent = n;
+  document.getElementById('p-email').textContent = _user.email||'';
+  document.getElementById('p-avatar').textContent = n.charAt(0).toUpperCase();
+  document.getElementById('p-visits').textContent = _user.visits||0;
+  updateAllPts();
+}
+
+function updateRewards(){ updateAllPts(); }
+
+// ── STATES DATA (All 29) ──────────────────────────────────────
+const STATES = [
+  {n:'Andhra Pradesh',p:'Rushikonda Beach',e:'🏖️',ct:'9 beaches',c:'c6',lat:17.79,lng:83.38},
+  {n:'Arunachal Pradesh',p:'Tawang Monastery',e:'🏔️',ct:'12 monasteries',c:'c3',lat:27.59,lng:91.87},
+  {n:'Assam',p:'Kaziranga Park',e:'🦏',ct:'8 parks',c:'c5',lat:26.58,lng:93.17},
+  {n:'Bihar',p:'Bodh Gaya Temple',e:'🛕',ct:'15 temples',c:'c4',lat:24.70,lng:84.99},
+  {n:'Chhattisgarh',p:'Chitrakoot Falls',e:'💧',ct:'10 waterfalls',c:'c1',lat:19.10,lng:81.69},
+  {n:'Goa',p:'Baga Beach',e:'🏖️',ct:'28 beaches',c:'c1',lat:15.56,lng:73.75},
+  {n:'Gujarat',p:'Rann of Kutch',e:'🏜️',ct:'20 attractions',c:'c4',lat:23.73,lng:69.86},
+  {n:'Haryana',p:'Kurukshetra',e:'🏛️',ct:'14 monuments',c:'c3',lat:29.97,lng:76.88},
+  {n:'Himachal Pradesh',p:'Rohtang Pass',e:'❄️',ct:'25 hill stations',c:'c3',lat:32.37,lng:77.25},
+  {n:'Jharkhand',p:'Hundru Falls',e:'💧',ct:'8 waterfalls',c:'c5',lat:23.31,lng:85.47},
+  {n:'Karnataka',p:'Hampi Ruins',e:'🏛️',ct:'30 monuments',c:'c4',lat:15.34,lng:76.46},
+  {n:'Kerala',p:'Kovalam Beach',e:'🌴',ct:'19 beaches',c:'c2',lat:8.40,lng:76.98},
+  {n:'Madhya Pradesh',p:'Khajuraho Temples',e:'🛕',ct:'22 temples',c:'c4',lat:24.83,lng:79.92},
+  {n:'Maharashtra',p:'Juhu Beach',e:'🌊',ct:'14 beaches',c:'c3',lat:19.10,lng:72.83},
+  {n:'Manipur',p:'Loktak Lake',e:'🏞️',ct:'6 lakes',c:'c2',lat:24.50,lng:93.80},
+  {n:'Meghalaya',p:'Living Root Bridges',e:'🌿',ct:'10 wonders',c:'c5',lat:25.58,lng:91.89},
+  {n:'Mizoram',p:'Phawngpui Peak',e:'⛰️',ct:'8 peaks',c:'c3',lat:22.56,lng:92.94},
+  {n:'Nagaland',p:'Dzukou Valley',e:'🌸',ct:'5 valleys',c:'c1',lat:25.59,lng:94.11},
+  {n:'Odisha',p:'Puri Beach',e:'🦀',ct:'11 beaches',c:'c5',lat:19.80,lng:85.83},
+  {n:'Punjab',p:'Golden Temple',e:'⭐',ct:'20 gurudwaras',c:'c4',lat:31.62,lng:74.88},
+  {n:'Rajasthan',p:'Jaisalmer Fort',e:'🏰',ct:'42 forts',c:'c4',lat:26.91,lng:70.91},
+  {n:'Sikkim',p:'Gurudongmar Lake',e:'🏔️',ct:'15 peaks',c:'c3',lat:27.66,lng:88.57},
+  {n:'Tamil Nadu',p:'Marina Beach',e:'🐚',ct:'22 beaches',c:'c4',lat:13.05,lng:80.28},
+  {n:'Telangana',p:'Charminar',e:'🕌',ct:'18 monuments',c:'c6',lat:17.36,lng:78.47},
+  {n:'Tripura',p:'Ujjayanta Palace',e:'🏯',ct:'7 palaces',c:'c2',lat:23.83,lng:91.29},
+  {n:'Uttar Pradesh',p:'Taj Mahal',e:'🕌',ct:'50 monuments',c:'c4',lat:27.18,lng:78.04},
+  {n:'Uttarakhand',p:'Valley of Flowers',e:'🌺',ct:'20 treks',c:'c5',lat:30.73,lng:79.60},
+  {n:'West Bengal',p:'Victoria Memorial',e:'🏛️',ct:'25 monuments',c:'c3',lat:22.54,lng:88.34},
+  {n:'Kashmir',p:'Dal Lake',e:'❄️',ct:'35 locations',c:'c3',lat:34.08,lng:74.80},
+];
+
+function renderStates(q=''){
+  const g = document.getElementById('states-grid');
+  if(!g) return;
+  const cols = ['c1','c2','c3','c4','c5','c6'];
+  const filtered = STATES.filter(s=>s.n.toLowerCase().includes(q.toLowerCase())||s.p.toLowerCase().includes(q.toLowerCase()));
+  g.innerHTML = filtered.length ? filtered.map((s,i)=>`
+    <div class="state-card" onclick="visit('${s.p}','${s.n}','${s.e}')">
+      <div class="sc-inner ${s.c||cols[i%6]}">
+        <div><div class="sc-name">${s.n}</div><div class="sc-ct">${s.ct}</div></div>
+      </div>
+      <div class="sc-emo">${s.e}</div>
+    </div>`).join('') 
+    : '<div style="padding:2rem;text-align:center;color:var(--muted);grid-column:1/-1">No states found</div>';
+}
+
+function filterStates(){
+  const q = document.getElementById('st-search')?.value||'';
+  renderStates(q);
+}
+
+function selCat(el, name){
+  document.querySelectorAll('.cat').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ex-title').textContent = el.querySelector('.cat-icon').textContent+' '+name;
+  const s = document.getElementById('st-search');
+  if(s) s.value='';
+  renderStates('');
+  show('explore');
+  addPts(5,'Category explored');
+}
+
+function doSearch(){
+  const q = document.getElementById('home-search')?.value?.toLowerCase()||'';
+  if(!q) return;
+  const found = STATES.find(s=>s.n.toLowerCase().includes(q)||s.p.toLowerCase().includes(q));
+  if(found) visit(found.p, found.n, found.e);
+  else toast('Koi jagah nahi mili — try karo!');
+}
+
+// ── CURRENT PLACE ─────────────────────────────────────────────
+let _place = {name:'Baga Beach',state:'Goa',emoji:'🏖️',lat:15.56,lng:73.75};
+
+function visit(name, state, emoji){
+  const s = STATES.find(x=>x.n===state)||{};
+  _place = {name, state, emoji, lat:s.lat||15.56, lng:s.lng||73.75};
+  document.getElementById('d-name').textContent = name;
+  document.getElementById('d-place').textContent = '📍 '+state;
+  document.getElementById('d-emoji').textContent = emoji;
+  document.getElementById('d-weather').textContent = '🌡️ Loading...';
+  loadWeather();
+  show('detail');
+  if(_user){
+    _user.visits = (_user.visits||0)+1;
+    const db=getDB(); if(db[_user.email]){ db[_user.email].visits=_user.visits; saveDB(db); saveSession(_user); }
+  }
+  addPts(50,'Visited '+name);
+}
+
+// ── TRANSPORT ─────────────────────────────────────────────────
+function bookUber(){
+  const url=`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${_place.lat}&dropoff[longitude]=${_place.lng}&dropoff[nickname]=${encodeURIComponent(_place.name)}`;
+  window.open(url,'_blank');
+  addPts(30,'Uber booked');
+}
+function bookOla(){
+  const url=`https://book.olacabs.com/?drop_lat=${_place.lat}&drop_lng=${_place.lng}&drop_name=${encodeURIComponent(_place.name)}`;
+  window.open(url,'_blank');
+  addPts(30,'Ola booked');
+}
+function openMaps(){
+  const url=`https://www.google.com/maps/dir/?api=1&destination=${_place.lat},${_place.lng}&travelmode=driving`;
+  window.open(url,'_blank');
+  addPts(15,'Maps opened');
+}
+function savePlace(){
+  toast('❤️ '+_place.name+' saved!');
+  addPts(20,'Place saved');
+}
+
+// ── WEATHER ───────────────────────────────────────────────────
+async function loadWeather(){
+  try{
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${_place.lat}&longitude=${_place.lng}&current_weather=true`);
+    const d = await r.json();
+    const t = Math.round(d.current_weather.temperature);
+    const code = d.current_weather.weathercode;
+    const cond = code<=1?'Sunny ☀️':code<=3?'Partly Cloudy ⛅':code<=48?'Foggy 🌫️':code<=67?'Rainy 🌧️':'Clear 🌤️';
+    const wc = document.getElementById('w-chip');
+    const dt = document.getElementById('d-temp');
+    const dc = document.getElementById('d-cond');
+    const dw = document.getElementById('d-weather');
+    if(wc) wc.textContent = '🌤️ '+t+'°C';
+    if(dt) dt.textContent = t+'°C';
+    if(dc) dc.textContent = cond;
+    if(dw) dw.textContent = '🌡️ '+t+'°C '+cond;
+  }catch(e){}
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.opacity='1';
+  t.style.transform='translateX(-50%) translateY(0)';
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; },2500);
+}
+function setErr(id,msg){ const e=document.getElementById(id+'-err'); if(e){e.textContent=msg;e.style.display='block';} }
+function clearErr(id){ const e=document.getElementById(id+'-err'); if(e){e.textContent='';e.style.display='none';} }
+
+// ── INIT ──────────────────────────────────────────────────────
+window.onload = function(){
+  renderStates('');
+  const sess = getSession();
+  if(sess){
+    const db = getDB();
+    if(db[sess.email]){
+      _user = db[sess.email];
+      saveSession(_user);
+      showRaw('home');
+      return;
+    }
+  }
+  showRaw('login');
+};
+</script>
+</body>
+</html>
